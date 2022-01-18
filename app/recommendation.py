@@ -1,9 +1,8 @@
 # coding: utf-8
 
 # All the recommandation logic and algorithms goes here
-
 from random import choice
-
+import collections
 from app.User import User
 
 
@@ -57,15 +56,17 @@ class Recommendation:
     # Display the recommendation for a user
     def make_recommendation(self, user):
         sortedUsers = sorted(self.compute_all_similarities(user), key=lambda l: l[1], reverse = True)
-        closest_user = self.test_users[sortedUsers[0][0]]
-        recommended_movies = ""
-        if hasattr(closest_user, 'good_ratings'):
-            for movie in closest_user.good_ratings:
-                recommended_movies += "," + movie.title
+        closests_users = []
+        for i in range(5):
+            closests_users.append(self.test_users[sortedUsers[i][0]])
+        print(closests_users)
+        recommended_movies = self.get_best_movies_from_users(closests_users)
+        recommendation_text = ""
+        for movie in recommended_movies:
+                recommendation_text += "," + movie.title
 
-            return "Vos recommandations : " + recommended_movies
-        else:
-            return "Il aime rien"
+        return "Vos recommandations : " + recommendation_text
+
 
     # Compute the similarity between two users
     @staticmethod
@@ -104,8 +105,16 @@ class Recommendation:
 
     @staticmethod
     def get_best_movies_from_users(users):
-
-        return []
+        movieList = []
+        for randomUser in users:
+            if hasattr(randomUser, 'good_ratings'):
+                for movie in randomUser.good_ratings:
+                    movieList.append(movie)
+        print(movieList)
+        print("------------------------------------------------------------")
+        movies = [item for item, count in collections.Counter(movieList).items() if count > 1]
+        print(movies)
+        return movies
 
     @staticmethod
     def get_user_appreciated_movies(user):
