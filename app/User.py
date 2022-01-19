@@ -14,6 +14,7 @@ class User:
         self.neutral_ratings = []
         # Variables used for the second algorithm
         self.ratings = dict()
+        self.clusters = [[],[],[],[],[],[],[],[],[],[]]
 
     def has_been_asked_a_question(self):
         return self.latest_movie_asked is not None
@@ -46,10 +47,8 @@ class User:
 
         # Clean space excess and set to lowercase
         clean_message = message.lower().strip()
+        if clean_message in ["1","2","3","4","5"]:
+            self.ratings[self.latest_movie_asked] = clean_message
+            self.questions_before_recommendation -= 1
 
-        if "oui" in clean_message:
-            self.answer_yes()
-        elif "non" in clean_message:
-            self.answer_no()
-        else:
-            self.answer_neutral()
+
