@@ -58,6 +58,7 @@ class Recommendation:
         for rating in self.ratings:
             user = self.register_test_user(rating.user)
             user.clusters[self.movie_cluster[rating.movie]].append(rating.score)
+            user.ratings[rating.movie] = rating.score
 
         for randomUser in self.test_users:
             thisUser = self.test_users[randomUser]
@@ -86,8 +87,24 @@ class Recommendation:
     def make_recommendation(self, user):
         sortedUsers = sorted(self.compute_all_similarities(user), key=lambda l: l[1], reverse = True)
         closests_users = []
-        for i in range(5):
+        for i in range(50):
             closests_users.append(self.test_users[sortedUsers[i][0]])
+
+        movie_ratings_fb_user = []
+        for movie_id in self.movies:
+            movie_score = 0
+            nb = 0
+            for randomUser in closests_users:
+                if movie_id in randomUser.ratings.keys():
+                    movie_score += randomUser.ratings[movie_id]
+                    nb += 1
+            if nb == 0: 
+                movie_ratings_fb_user.append([movie_id, 0]) 
+            else:
+                movie_ratings_fb_user.append([movie_id, movie_score/nb]) 
+        print(movie_ratings_fb_user)
+                
+
         recommended_movies = self.get_best_movies_from_users(closests_users)
         recommendation_text = ""
         for movie in recommended_movies:
@@ -154,5 +171,3 @@ class Recommendation:
     @staticmethod
     def get_normalised_cluster_notations(user):
         return []
-
-    test = 1
