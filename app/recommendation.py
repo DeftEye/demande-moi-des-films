@@ -5,6 +5,7 @@ from random import choice
 import collections
 from app.User import User
 from sklearn.cluster import KMeans
+from numpy import linalg as la
 import numpy as np
 
 
@@ -87,7 +88,6 @@ class Recommendation:
         closests_users = []
         for i in range(5):
             closests_users.append(self.test_users[sortedUsers[i][0]])
-        print(closests_users)
         recommended_movies = self.get_best_movies_from_users(closests_users)
         recommendation_text = ""
         for movie in recommended_movies:
@@ -100,32 +100,30 @@ class Recommendation:
     @staticmethod
     def get_similarity(user_a, user_b):
         similarity = 0
-        nb_films_rated_by_both = 0
 
-        if hasattr(user_a, 'good_ratings'):
-            for likedMovie in user_a.good_ratings:
-                if hasattr(user_b, 'good_ratings') and likedMovie in user_b.good_ratings:
-                    similarity += 1 
-                    nb_films_rated_by_both += 1 
-                elif hasattr(user_b, 'bad_ratings') and likedMovie in user_b.bad_ratings:
-                    similarity -= 1
-                    nb_films_rated_by_both += 1
-        if hasattr(user_a, 'bad_ratings'):
-            for dislikedMovie in user_a.bad_ratings:
-                if hasattr(user_b, 'good_ratings') and dislikedMovie in user_b.good_ratings:
-                    similarity -= 1 
-                    nb_films_rated_by_both += 1 
-                elif hasattr(user_b, 'bad_ratings') and dislikedMovie in user_b.bad_ratings:
-                    similarity += 1
-                    nb_films_rated_by_both += 1    
-        if nb_films_rated_by_both == 0:
-            return 0
-        else :
-            return similarity/nb_films_rated_by_both
+        for i in range(10):
+            similarity += user_b.clusters[i]*user_a.clusters[i]
+                
+        norm_a = la.norm(user_a.clusters) 
+        norm_b = la.norm(user_b.clusters) 
+
+        return similarity/(norm_a*norm_b)
+        
+
 
     # Compute the similarity between a user and all the users in the data set
     def compute_all_similarities(self, user):
-        self.process_ratings_to_users()
+        for movie in user.ratings:
+            user.clusters[self.movie_cluster[movie.id]].append(user.ratings[movie])
+        for i in range(10): 
+                if len(user.clusters[i]) > 0:
+                    user.clusters[i] = sum(user.clusters[i])/len(user.clusters[i])
+                else :
+                    user.clusters[i] = 2.5
+        mean = sum(user.clusters)/10
+        var = sum((l-mean)**2 for l in user.clusters) / len(user.clusters)
+        for i in range(10):                
+            user.clusters[i] = (user.clusters[i] - mean)/var
         all_similarities = []
         for randomUser in self.test_users.keys():
             all_similarities.append([randomUser, self.get_similarity(user, self.test_users[randomUser])])
@@ -157,3 +155,4 @@ class Recommendation:
     def get_normalised_cluster_notations(user):
         return []
 
+    test = 1

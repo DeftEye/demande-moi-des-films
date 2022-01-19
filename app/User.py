@@ -48,7 +48,7 @@ class User:
         # Clean space excess and set to lowercase
         clean_message = message.lower().strip()
         if clean_message in ["1","2","3","4","5"]:
-            self.ratings[self.latest_movie_asked] = clean_message
+            self.ratings[self.latest_movie_asked] = int(clean_message)
             self.questions_before_recommendation -= 1
 
 
