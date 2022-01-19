@@ -4,6 +4,8 @@
 from random import choice
 import collections
 from app.User import User
+from sklearn.cluster import KMeans
+import numpy as np
 
 
 class Recommendation:
@@ -32,6 +34,22 @@ class Recommendation:
         self.test_users = {}
 
         # Launch the process of ratings
+
+        genres = []
+        for movie_id in self.movies:
+            movie = self.movies[movie_id]
+            genres.append([movie.adventure, movie.action, movie.animation, movie.children, movie.comedy, movie.crime, movie.documentary, movie.drama, movie.fantasy, movie.film_noir, movie.horror, movie.musical, movie.mystery, movie.romance, movie.sci_fi,movie.thriller, movie.war, movie.western, movie.unknown]) 
+        movies_genres = np.array(genres, dtype=object) 
+
+        self.kmeans = KMeans(n_clusters = 10).fit(movies_genres)
+        self.movie_cluster = {}
+        i = 0
+
+        for movie_id in self.movies:
+            self.movie_cluster[movie_id] = self.kmeans.labels_[i]
+            i += 1 
+
+
         self.process_ratings_to_users()
 
     # To process ratings, users associated to ratings are created and every rating is then stored in its user
