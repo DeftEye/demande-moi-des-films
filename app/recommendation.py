@@ -49,7 +49,7 @@ class Recommendation:
             self.movie_cluster[movie_id] = self.kmeans.labels_[i]
             i += 1 
 
-
+        self.user_cluster_matrix = []
         self.process_ratings_to_users()
 
     # To process ratings, users associated to ratings are created and every rating is then stored in its user
@@ -64,9 +64,12 @@ class Recommendation:
                 if len(thisUser.clusters[i]) > 0:
                     thisUser.clusters[i] = sum(thisUser.clusters[i])/len(thisUser.clusters[i])
                 else :
-                    thisUser.clusters[i] = 0
+                    thisUser.clusters[i] = 2.5
             mean = sum(thisUser.clusters)/10
-
+            var = sum((l-mean)**2 for l in thisUser.clusters) / len(thisUser.clusters)
+            for i in range(10):
+                thisUser.clusters[i] = (thisUser.clusters[i] - mean)/var
+            self.user_cluster_matrix.append([thisUser, thisUser.clusters])
         
                 
             
