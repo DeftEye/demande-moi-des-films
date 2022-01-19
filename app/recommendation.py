@@ -101,14 +101,21 @@ class Recommendation:
             if nb == 0: 
                 movie_ratings_fb_user.append([movie_id, 0]) 
             else:
-                movie_ratings_fb_user.append([movie_id, movie_score/nb]) 
-        print(movie_ratings_fb_user)
-                
+                movie_ratings_fb_user.append([movie_id, movie_score/nb])
 
-        recommended_movies = self.get_best_movies_from_users(closests_users)
+        sortedMovies = sorted(movie_ratings_fb_user, key=lambda l: l[1], reverse = True)
+
+        recommended_movies = []
+        i = 0
+        while len(recommended_movies) < 5:
+            if sortedMovies[i][0] not in user.ratings.keys():
+                recommended_movies.append(sortedMovies[i])
+            i += 1
+
         recommendation_text = ""
         for movie in recommended_movies:
-                recommendation_text += "," + movie.title
+            realMovie = self.movies[movie[0]]
+            recommendation_text += "," + realMovie.title
 
         return "Vos recommandations : " + recommendation_text
 
