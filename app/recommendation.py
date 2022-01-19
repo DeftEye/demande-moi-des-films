@@ -28,7 +28,7 @@ class Recommendation:
         #     * user (with the user number)
         #     * is_appreciated (in the case of simplified rating, whether or not the user liked the movie)
         #     * score (in the case of rating, the score given by the user)
-        self.ratings = movielens.simplified_ratings
+        self.ratings = movielens.ratings
 
         # This is the set of users in the training set
         self.test_users = {}
@@ -56,14 +56,21 @@ class Recommendation:
     def process_ratings_to_users(self):
         for rating in self.ratings:
             user = self.register_test_user(rating.user)
-            movie = self.movies[rating.movie]
-            if hasattr(rating, 'is_appreciated'):
-                if rating.is_appreciated:
-                    user.good_ratings.append(movie)
-                else:
-                    user.bad_ratings.append(movie)
-            if hasattr(rating, 'score'):
-                user.ratings[movie.id] = rating.score
+            user.clusters[self.movie_cluster[rating.movie]].append(rating.score)
+
+        for randomUser in self.test_users:
+            thisUser = self.test_users[randomUser]
+            for i in range(10): 
+                if len(thisUser.clusters[i]) > 0:
+                    thisUser.clusters[i] = sum(thisUser.clusters[i])/len(thisUser.clusters[i])
+                else :
+                    thisUser.clusters[i] = 0
+            mean = sum(thisUser.clusters)/10
+
+        
+                
+            
+            
 
     # Register a user if it does not exist and return it
     def register_test_user(self, sender):
@@ -128,10 +135,8 @@ class Recommendation:
             if hasattr(randomUser, 'good_ratings'):
                 for movie in randomUser.good_ratings:
                     movieList.append(movie)
-        print(movieList)
         print("------------------------------------------------------------")
         movies = [item for item, count in collections.Counter(movieList).items() if count > 1]
-        print(movies)
         return movies
 
     @staticmethod
