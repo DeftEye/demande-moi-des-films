@@ -61,17 +61,17 @@ class Recommendation:
             user.ratings[rating.movie] = rating.score
 
         for randomUser in self.test_users:
-            thisUser = self.test_users[randomUser]
+            this_user = self.test_users[randomUser]
             for i in range(10): 
-                if len(thisUser.clusters[i]) > 0:
-                    thisUser.clusters[i] = sum(thisUser.clusters[i])/len(thisUser.clusters[i])
+                if len(this_user.clusters[i]) > 0:
+                    this_user.clusters[i] = sum(this_user.clusters[i])/len(this_user.clusters[i])
                 else :
-                    thisUser.clusters[i] = 2.5
-            mean = sum(thisUser.clusters)/10
-            var = sum((l-mean)**2 for l in thisUser.clusters) / len(thisUser.clusters)
+                    this_user.clusters[i] = 2.5
+            mean = sum(this_user.clusters)/10
+            var = sum((l-mean)**2 for l in this_user.clusters) / len(this_user.clusters)
             for i in range(10):
-                thisUser.clusters[i] = (thisUser.clusters[i] - mean)/var
-            self.user_cluster_matrix.append([thisUser, thisUser.clusters])
+                this_user.clusters[i] = (this_user.clusters[i] - mean)/var
+            self.user_cluster_matrix.append([this_user, this_user.clusters])
         
                 
             
