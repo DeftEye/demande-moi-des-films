@@ -109,15 +109,10 @@ class Recommendation:
         i = 0
         while len(recommended_movies) < 5:
             if sortedMovies[i][0] not in user.ratings.keys():
-                recommended_movies.append(sortedMovies[i])
+                recommended_movies.append(self.movies[sortedMovies[i][0]].title)
             i += 1
 
-        recommendation_text = ""
-        for movie in recommended_movies:
-            realMovie = self.movies[movie[0]]
-            recommendation_text += "," + realMovie.title
-
-        return "Vos recommandations : " + recommendation_text
+        return "Vos recommandations : " + ", ".join(recommended_movies)
 
 
     # Compute the similarity between two users
