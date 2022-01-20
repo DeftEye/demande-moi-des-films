@@ -155,7 +155,6 @@ class Recommendation:
             if hasattr(randomUser, 'good_ratings'):
                 for movie in randomUser.good_ratings:
                     movieList.append(movie)
-        print("------------------------------------------------------------")
         movies = [item for item, count in collections.Counter(movieList).items() if count > 1]
         return movies
 
