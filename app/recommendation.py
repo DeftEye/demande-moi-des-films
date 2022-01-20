@@ -94,9 +94,9 @@ class Recommendation:
         for movie_id in self.movies:
             movie_score = 0
             nb = 0
-            for randomUser in closests_users:
-                if movie_id in randomUser.ratings.keys():
-                    movie_score += randomUser.ratings[movie_id]
+            for random_user in closests_users:
+                if movie_id in random_user.ratings.keys():
+                    movie_score += random_user.ratings[movie_id]
                     nb += 1
             if nb == 0: 
                 movie_ratings_fb_user.append([movie_id, 0]) 
