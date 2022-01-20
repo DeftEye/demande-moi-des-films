@@ -4,6 +4,9 @@
 from random import choice
 import collections
 from app.User import User
+from sklearn.cluster import KMeans
+from numpy import linalg as la
+import numpy as np
 
 
 class Recommendation:
@@ -26,26 +29,53 @@ class Recommendation:
         #     * user (with the user number)
         #     * is_appreciated (in the case of simplified rating, whether or not the user liked the movie)
         #     * score (in the case of rating, the score given by the user)
-        self.ratings = movielens.simplified_ratings
+        self.ratings = movielens.ratings
 
         # This is the set of users in the training set
         self.test_users = {}
 
         # Launch the process of ratings
+
+        genres = []
+        for movie_id in self.movies:
+            movie = self.movies[movie_id]
+            genres.append([movie.adventure, movie.action, movie.animation, movie.children, movie.comedy, movie.crime, movie.documentary, movie.drama, movie.fantasy, movie.film_noir, movie.horror, movie.musical, movie.mystery, movie.romance, movie.sci_fi,movie.thriller, movie.war, movie.western, movie.unknown]) 
+        movies_genres = np.array(genres, dtype=object) 
+
+        self.kmeans = KMeans(n_clusters = 10).fit(movies_genres)
+        self.movie_cluster = {}
+        i = 0
+
+        for movie_id in self.movies:
+            self.movie_cluster[movie_id] = self.kmeans.labels_[i]
+            i += 1 
+
+        self.user_cluster_matrix = []
         self.process_ratings_to_users()
 
     # To process ratings, users associated to ratings are created and every rating is then stored in its user
     def process_ratings_to_users(self):
         for rating in self.ratings:
             user = self.register_test_user(rating.user)
-            movie = self.movies[rating.movie]
-            if hasattr(rating, 'is_appreciated'):
-                if rating.is_appreciated:
-                    user.good_ratings.append(movie)
-                else:
-                    user.bad_ratings.append(movie)
-            if hasattr(rating, 'score'):
-                user.ratings[movie.id] = rating.score
+            user.clusters[self.movie_cluster[rating.movie]].append(rating.score)
+            user.ratings[rating.movie] = rating.score
+
+        for randomUser in self.test_users:
+            this_user = self.test_users[randomUser]
+            for i in range(10): 
+                if len(this_user.clusters[i]) > 0:
+                    this_user.clusters[i] = sum(this_user.clusters[i])/len(this_user.clusters[i])
+                else :
+                    this_user.clusters[i] = 2.5
+            mean = sum(this_user.clusters)/10
+            var = sum((l-mean)**2 for l in this_user.clusters) / len(this_user.clusters)
+            for i in range(10):
+                this_user.clusters[i] = (this_user.clusters[i] - mean)/var
+            self.user_cluster_matrix.append([this_user, this_user.clusters])
+        
+                
+            
+            
 
     # Register a user if it does not exist and return it
     def register_test_user(self, sender):
@@ -57,47 +87,62 @@ class Recommendation:
     def make_recommendation(self, user):
         sortedUsers = sorted(self.compute_all_similarities(user), key=lambda l: l[1], reverse = True)
         closests_users = []
-        for i in range(5):
+        for i in range(50):
             closests_users.append(self.test_users[sortedUsers[i][0]])
-        print(closests_users)
-        recommended_movies = self.get_best_movies_from_users(closests_users)
-        recommendation_text = ""
-        for movie in recommended_movies:
-                recommendation_text += "," + movie.title
 
-        return "Vos recommandations : " + recommendation_text
+        movie_ratings_fb_user = []
+        for movie_id in self.movies:
+            movie_score = 0
+            nb = 0
+            for random_user in closests_users:
+                if movie_id in random_user.ratings.keys():
+                    movie_score += random_user.ratings[movie_id]
+                    nb += 1
+            if nb == 0: 
+                movie_ratings_fb_user.append([movie_id, 0]) 
+            else:
+                movie_ratings_fb_user.append([movie_id, movie_score/nb])
+
+        sortedMovies = sorted(movie_ratings_fb_user, key=lambda l: l[1], reverse = True)
+
+        recommended_movies = []
+        i = 0
+        while len(recommended_movies) < 5:
+            if sortedMovies[i][0] not in user.ratings.keys():
+                recommended_movies.append(self.movies[sortedMovies[i][0]].title)
+            i += 1
+
+        return "Vos recommandations : " + ", ".join(recommended_movies)
 
 
     # Compute the similarity between two users
     @staticmethod
     def get_similarity(user_a, user_b):
         similarity = 0
-        nb_films_rated_by_both = 0
 
-        if hasattr(user_a, 'good_ratings'):
-            for likedMovie in user_a.good_ratings:
-                if hasattr(user_b, 'good_ratings') and likedMovie in user_b.good_ratings:
-                    similarity += 1 
-                    nb_films_rated_by_both += 1 
-                elif hasattr(user_b, 'bad_ratings') and likedMovie in user_b.bad_ratings:
-                    similarity -= 1
-                    nb_films_rated_by_both += 1
-        if hasattr(user_a, 'bad_ratings'):
-            for dislikedMovie in user_a.bad_ratings:
-                if hasattr(user_b, 'good_ratings') and dislikedMovie in user_b.good_ratings:
-                    similarity -= 1 
-                    nb_films_rated_by_both += 1 
-                elif hasattr(user_b, 'bad_ratings') and dislikedMovie in user_b.bad_ratings:
-                    similarity += 1
-                    nb_films_rated_by_both += 1    
-        if nb_films_rated_by_both == 0:
-            return 0
-        else :
-            return similarity/nb_films_rated_by_both
+        for i in range(10):
+            similarity += user_b.clusters[i]*user_a.clusters[i]
+                
+        norm_a = la.norm(user_a.clusters) 
+        norm_b = la.norm(user_b.clusters) 
+
+        return similarity/(norm_a*norm_b)
+        
+
 
     # Compute the similarity between a user and all the users in the data set
     def compute_all_similarities(self, user):
-        self.process_ratings_to_users()
+        for movie in user.ratings:
+            user.clusters[self.movie_cluster[movie.id]].append(user.ratings[movie])
+        for i in range(10): 
+                if len(user.clusters[i]) > 0:
+                    user.clusters[i] = sum(user.clusters[i])/len(user.clusters[i])
+                else :
+                    user.clusters[i] = 2.5
+        mean = sum(user.clusters)/10
+        var = sum((l-mean)**2 for l in user.clusters) / len(user.clusters)
+        for i in range(10):                
+            user.clusters[i] = (user.clusters[i] - mean)/var
         all_similarities = []
         for randomUser in self.test_users.keys():
             all_similarities.append([randomUser, self.get_similarity(user, self.test_users[randomUser])])
@@ -110,10 +155,7 @@ class Recommendation:
             if hasattr(randomUser, 'good_ratings'):
                 for movie in randomUser.good_ratings:
                     movieList.append(movie)
-        print(movieList)
-        print("------------------------------------------------------------")
         movies = [item for item, count in collections.Counter(movieList).items() if count > 1]
-        print(movies)
         return movies
 
     @staticmethod
@@ -130,4 +172,3 @@ class Recommendation:
     @staticmethod
     def get_normalised_cluster_notations(user):
         return []
-
